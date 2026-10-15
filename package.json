@@ -1,0 +1,70 @@
+{
+  "name": "stashpilot",
+  "version": "0.1.0",
+  "description": "The missing interface for Git stashes: preview, search, and clean up stashes without leaving the terminal.",
+  "keywords": [
+    "git",
+    "stash",
+    "tui",
+    "terminal",
+    "cli",
+    "ink"
+  ],
+  "author": "Pier Roberto Lucisano",
+  "license": "MIT",
+  "homepage": "https://github.com/pierroberto/stashpilot#readme",
+  "bugs": {
+    "url": "https://github.com/pierroberto/stashpilot/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pierroberto/stashpilot.git"
+  },
+  "type": "module",
+  "bin": {
+    "spilot": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "tsx src/cli.ts",
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "changeset publish",
+    "prepublishOnly": "npm run typecheck && npm run lint && npm test && npm run build"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^3.0.3",
+    "@eslint/js": "^9.39.5",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.3.0",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.13.0",
+    "ink": "^6.8.0",
+    "ink-testing-library": "^4.0.0",
+    "prettier": "^3.9.10",
+    "react": "^19.3.1",
+    "tsup": "^8.5.1",
+    "tsx": "^4.23.15",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.71.2",
+    "vitest": "^5.0.4"
+  }
+}

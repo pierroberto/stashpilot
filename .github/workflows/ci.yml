@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Typecheck, lint, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test
+      - run: npm run build
+
+      - name: Check package contents
+        run: npm pack --dry-run
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+
+  runtime-node20:
+    # The published package declares engines.node >=20; dev tooling needs a newer Node,
+    # so this job only smoke-tests the built output on the oldest supported runtime.
+    name: Smoke test on Node.js 20
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run built CLI
+        run: |
+          node dist/cli.js --version
+          node dist/cli.js --help
+          git init -q -b main repo
+          cd repo
+          git -c user.email=ci@example.com -c user.name=CI commit -q --allow-empty -m init
+          echo hello > file.txt
+          git stash push -q -u -m "smoke test"
+          node ../dist/cli.js list
+          node ../dist/cli.js list --json | node -e "JSON.parse(require('fs').readFileSync(0, 'utf8'))"

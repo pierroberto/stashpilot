@@ -1,6 +1,6 @@
 {
   "name": "stashpilot",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "The missing interface for Git stashes: preview, search, and clean up stashes without leaving the terminal.",
   "keywords": [
     "git",

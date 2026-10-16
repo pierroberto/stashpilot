@@ -11,10 +11,14 @@ afterEach(() => {
   repo?.cleanup();
 });
 
+let lastFrame: () => string = () => '';
+
 async function waitFor(check: () => boolean, label: string, timeout = 5000) {
   const start = Date.now();
   while (!check()) {
-    if (Date.now() - start > timeout) throw new Error(`Timed out waiting for: ${label}`);
+    if (Date.now() - start > timeout) {
+      throw new Error(`Timed out waiting for: ${label}\nLast frame:\n${lastFrame()}`);
+    }
     await new Promise((r) => setTimeout(r, 20));
   }
 }
@@ -23,6 +27,7 @@ function renderApp(dir: string) {
   const git = new GitClient({ cwd: dir });
   const result = render(<App git={git} repoRoot={dir} />);
   unmount = result.unmount;
+  lastFrame = () => result.lastFrame() ?? '';
   const frame = () => result.lastFrame() ?? '';
   const press = async (input: string) => {
     result.stdin.write(input);

@@ -1,6 +1,6 @@
 import { Box, Text, useApp, useInput, type Key } from 'ink';
 import { basename } from 'node:path';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { GitError, type GitClient } from '../git/client.js';
 import {
   actionArgs,
@@ -241,7 +241,7 @@ export function App({ git, repoRoot, now = Date.now }: AppProps) {
     [git, prepareAction],
   );
 
-  useInput((input, key) => {
+  const handleInput = (input: string, key: Key) => {
     switch (overlay.kind) {
       case 'busy':
         return;
@@ -380,7 +380,17 @@ export function App({ git, repoRoot, now = Date.now }: AppProps) {
     if (input === 'b') {
       return setOverlay({ kind: 'branch-input', stash: selected, value: '', error: null });
     }
+  };
+
+  // Ink re-subscribes useInput handlers in a passive effect, which runs after the new frame is
+  // already on screen; a key pressed in between would reach the previous render's handler and
+  // act on stale state (e.g. the stash selected before the last move). A layout effect updates
+  // the ref before the frame is drawn, so keys always use the state the user is looking at.
+  const inputHandler = useRef(handleInput);
+  useLayoutEffect(() => {
+    inputHandler.current = handleInput;
   });
+  useInput(useCallback((input: string, key: Key) => inputHandler.current(input, key), []));
 
   const header = (
     <Box height={1}>

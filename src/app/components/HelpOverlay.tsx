@@ -2,11 +2,13 @@ import { Box, Text } from 'ink';
 import { theme } from '../theme.js';
 
 export const KEY_BINDINGS: [keys: string, description: string][] = [
-  ['j / k, ↓ / ↑', 'Move between stashes (or files / diff lines in the preview)'],
-  ['h / l, Tab', 'Switch focus between stash list and preview'],
-  ['Enter', 'Toggle file summary / full diff'],
-  ['PgDn / PgUp, Space', 'Scroll the diff by a page'],
+  ['Tab / Shift+Tab', 'Move focus: stash list → files → diff'],
+  ['h / l', 'Move focus left / right'],
+  ['j / k, ↓ / ↑', 'Move in the focused pane (stashes, files, or diff lines)'],
+  ['Space, PgDn / PgUp', 'Scroll the diff by a page (from any pane)'],
+  ['[ / ]', 'Previous / next file'],
   ['g / G', 'Jump to top / bottom'],
+  ['Enter', 'Toggle file summary / full diff'],
   ['/', 'Filter by message, branch, or changed filename'],
   ['a', 'Apply selected stash (keeps it)'],
   ['p', 'Pop selected stash (apply, then drop on success)'],
@@ -36,7 +38,8 @@ export function HelpOverlay({ width }: { width: number }) {
       ))}
       <Text> </Text>
       <Text color={theme.textMuted}>
-        Every action that changes your repository asks for confirmation first.
+        The mouse wheel scrolls the focused pane. Every action that changes your repository asks for
+        confirmation first.
       </Text>
       <Text color={theme.textMuted}>Press ? or Esc to close.</Text>
     </Box>

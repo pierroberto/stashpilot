@@ -71,28 +71,36 @@ outside a Git repository, `2` for invalid arguments).
   `(deleted)` if that branch no longer exists, or `detached`), relative age, number of changed
   files, insertions/deletions, `U` when it contains untracked files, and `merge` when it was
   created on top of a merge commit.
-- **Right pane** — the selected stash's file summary with the selected file's diff underneath,
-  or the full unified diff (toggle with `Enter`).
+- **Right pane** — the selected stash's file list with the selected file's diff underneath,
+  or the full diff of every file (toggle with `Enter`). Each file starts with a highlighted
+  bar showing its status, path, and line counts, and the pane shows which lines you are
+  viewing (`lines 18–34 of 82 ↑↓`).
 
 The list appears immediately; file counts and line stats fill in progressively.
 
+Focus moves between three panes: **stash list → file list → diff** (in full-diff mode: stash
+list → diff). The focused pane has a highlighted border, and `j`/`k`, the arrow keys, and the
+mouse wheel act on it.
+
 ### Keyboard shortcuts
 
-| Key                      | Action                                                            |
-| ------------------------ | ----------------------------------------------------------------- |
-| `j` / `k`, `↓` / `↑`     | Move between stashes (in the preview: between files / diff lines) |
-| `h` / `l`, `Tab`         | Switch focus between stash list and preview                       |
-| `Enter`                  | Toggle file summary / full diff                                   |
-| `PgDn` / `PgUp`, `Space` | Scroll the diff by a page                                         |
-| `g` / `G`                | Jump to top / bottom                                              |
-| `/`                      | Filter by message, branch, or changed filename (live)             |
-| `a`                      | Apply the selected stash (keeps it)                               |
-| `p`                      | Pop the selected stash (applies it, removes it on success)        |
-| `d`                      | Drop the selected stash                                           |
-| `b`                      | Create a branch from the selected stash                           |
-| `r`                      | Refresh stash data                                                |
-| `?`                      | Show help                                                         |
-| `q` / `Esc`              | Quit (`Esc` clears an active filter first)                        |
+| Key                      | Action                                                       |
+| ------------------------ | ------------------------------------------------------------ |
+| `Tab` / `Shift+Tab`      | Move focus: stash list → file list → diff                    |
+| `h` / `l`                | Move focus left / right                                      |
+| `j` / `k`, `↓` / `↑`     | Move in the focused pane (stashes, files, or diff lines)     |
+| `PgDn` / `PgUp`, `Space` | Scroll the diff by a page (from any pane)                    |
+| `[` / `]`                | Previous / next file                                         |
+| `g` / `G`                | Jump to top / bottom                                         |
+| `Enter`                  | Toggle file summary / full diff (opens at the selected file) |
+| `/`                      | Filter by message, branch, or changed filename (live)        |
+| `a`                      | Apply the selected stash (keeps it)                          |
+| `p`                      | Pop the selected stash (applies it, removes it on success)   |
+| `d`                      | Drop the selected stash                                      |
+| `b`                      | Create a branch from the selected stash                      |
+| `r`                      | Refresh stash data                                           |
+| `?`                      | Show help                                                    |
+| `q` / `Esc`              | Quit (`Esc` clears an active filter first)                   |
 
 While typing a filter or branch name: `Enter` confirms, `Esc` cancels, `Ctrl+U` clears.
 

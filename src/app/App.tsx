@@ -25,6 +25,7 @@ import { StashList } from './components/StashList.js';
 import { usePreview } from './hooks/usePreview.js';
 import { useStashes } from './hooks/useStashes.js';
 import { useTerminalSize } from './hooks/useTerminalSize.js';
+import { buildFullView, fileAtLine, fileBody, findFileDiff } from './diffView.js';
 import { theme } from './theme.js';
 
 export interface AppProps {
@@ -108,6 +109,24 @@ export function App({ git, repoRoot, now = Date.now }: AppProps) {
       return { sha: selectedSha, file: same ? n.file : 0, scroll: next };
     });
 
+  // Diff rows for both preview modes; memoized because large diffs are expensive to rebuild.
+  const previewStats = previewReady ? preview.stats : null;
+  const previewDiff = previewReady ? preview.diff : null;
+  const fullView = useMemo(
+    () => (previewStats && previewDiff ? buildFullView(previewStats.files, previewDiff) : null),
+    [previewStats, previewDiff],
+  );
+  const selectedChange = previewStats?.files[selectedFile];
+  const fileLines = useMemo(
+    () =>
+      previewDiff && selectedChange ? fileBody(findFileDiff(previewDiff, selectedChange)) : null,
+    [previewDiff, selectedChange],
+  );
+
+  // Focus zones depend on the mode: the file list exists only in summary mode.
+  const zones: Focus[] = mode === 'summary' ? ['list', 'files', 'diff'] : ['list', 'diff'];
+  const activeFocus: Focus = zones.includes(focus) ? focus : 'diff';
+
   // Layout.
   const statusLines = statusHeight(status);
   const bodyHeight = Math.max(4, rows - 2 - statusLines);
@@ -115,16 +134,12 @@ export function App({ git, repoRoot, now = Date.now }: AppProps) {
   const listWidth = clamp(Math.round(columns * 0.4), 30, 64);
   const previewWidth = Math.max(20, columns - listWidth);
   const diffHeight = diffViewportHeight(paneHeight, mode, fileCount);
-  const currentDiffLength = (() => {
-    if (!previewReady || !preview.diff) return 0;
-    if (mode === 'diff') return preview.diff.lines.length;
-    const file = preview.stats?.files[selectedFile];
-    const diff = file
-      ? preview.diff.files.find((d) => d.path === file.path && d.untracked === file.untracked)
-      : undefined;
-    return diff?.lines.length ?? 0;
-  })();
+  const currentDiffLength = (mode === 'diff' ? fullView?.lines.length : fileLines?.length) ?? 0;
   const maxScroll = Math.max(0, currentDiffLength - diffHeight);
+  const maxFullScroll = Math.max(
+    0,
+    (fullView?.lines.length ?? 0) - diffViewportHeight(paneHeight, 'diff', fileCount),
+  );
 
   const select = useCallback(
     (index: number) => {
@@ -294,14 +309,37 @@ export function App({ git, repoRoot, now = Date.now }: AppProps) {
       return;
     }
     if (key.tab || input === 'h' || input === 'l') {
-      if (input === 'h') setFocus('list');
-      else if (input === 'l') setFocus('preview');
-      else setFocus((f) => (f === 'list' ? 'preview' : 'list'));
+      const index = zones.indexOf(activeFocus);
+      const next = key.tab
+        ? (index + (key.shift ? zones.length - 1 : 1)) % zones.length
+        : clamp(index + (input === 'l' ? 1 : -1), 0, zones.length - 1);
+      setFocus(zones[next]!);
       return;
     }
     if (key.return) {
-      setMode((m) => (m === 'summary' ? 'diff' : 'summary'));
-      setScroll(0);
+      if (mode === 'summary') {
+        // Open the full diff at the selected file, ready to scroll.
+        const offset = fullView?.fileOffsets[selectedFile] ?? 0;
+        setMode('diff');
+        setFocus('diff');
+        setNav({ sha: selectedSha, file: selectedFile, scroll: clamp(offset, 0, maxFullScroll) });
+      } else {
+        // Back to the summary, selecting the file that was being read.
+        const file = fullView ? fileAtLine(fullView.fileOffsets, scroll) : 0;
+        setMode('summary');
+        setNav({ sha: selectedSha, file, scroll: 0 });
+      }
+      return;
+    }
+    if (input === ']' || input === '[') {
+      const step = input === ']' ? 1 : -1;
+      if (mode === 'summary') {
+        setSelectedFile((f) => clamp(f + step, 0, fileCount - 1));
+      } else if (fullView) {
+        const current = fileAtLine(fullView.fileOffsets, scroll);
+        const target = clamp(current + step, 0, fullView.fileOffsets.length - 1);
+        setScroll(clamp(fullView.fileOffsets[target] ?? 0, 0, maxScroll));
+      }
       return;
     }
 
@@ -313,12 +351,12 @@ export function App({ git, repoRoot, now = Date.now }: AppProps) {
     if (key.pageDown || input === ' ') return setScroll((s) => clamp(s + page, 0, maxScroll));
     if (key.pageUp) return setScroll((s) => clamp(s - page, 0, maxScroll));
 
-    if (focus === 'list') {
+    if (activeFocus === 'list') {
       if (down) return select(selectedIndex + repeat);
       if (up) return select(selectedIndex - repeat);
       if (input === 'g') return select(0);
       if (input === 'G') return select(visible.length - 1);
-    } else if (mode === 'summary') {
+    } else if (activeFocus === 'files') {
       if (down || up) {
         setSelectedFile((f) => clamp(f + (down ? repeat : -repeat), 0, fileCount - 1));
         return;
@@ -383,7 +421,7 @@ export function App({ git, repoRoot, now = Date.now }: AppProps) {
       <Box flexDirection="row" height={bodyHeight}>
         <Box
           borderStyle="round"
-          borderColor={focus === 'list' ? theme.borderStrong : theme.borderSubtle}
+          borderColor={activeFocus === 'list' ? theme.borderStrong : theme.borderSubtle}
           width={listWidth}
           height={bodyHeight}
           paddingX={1}
@@ -394,7 +432,7 @@ export function App({ git, repoRoot, now = Date.now }: AppProps) {
             stats={stats}
             statsErrors={statsErrors}
             selectedIndex={selectedIndex}
-            focused={focus === 'list'}
+            focused={activeFocus === 'list'}
             width={listWidth - 4}
             height={paneHeight}
             now={now_}
@@ -402,7 +440,7 @@ export function App({ git, repoRoot, now = Date.now }: AppProps) {
         </Box>
         <Box
           borderStyle="round"
-          borderColor={focus === 'preview' ? theme.borderStrong : theme.borderSubtle}
+          borderColor={activeFocus === 'list' ? theme.borderSubtle : theme.borderStrong}
           width={previewWidth}
           height={bodyHeight}
           paddingX={1}
@@ -412,11 +450,14 @@ export function App({ git, repoRoot, now = Date.now }: AppProps) {
               stash={selected}
               preview={preview}
               mode={mode}
-              focused={focus === 'preview'}
+              focus={activeFocus}
               selectedFile={selectedFile}
               scroll={scroll}
               height={paneHeight}
+              width={previewWidth - 4}
               now={now_}
+              fullView={fullView}
+              fileLines={fileLines}
             />
           ) : (
             <Text color={theme.textMuted}>Loading…</Text>
@@ -436,7 +477,7 @@ export function App({ git, repoRoot, now = Date.now }: AppProps) {
         overlay={overlay}
         filter={filter}
         status={status}
-        focus={focus}
+        focus={activeFocus}
         mode={mode}
         statusLines={statusLines}
       />

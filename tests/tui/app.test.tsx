@@ -161,10 +161,48 @@ describe('TUI', () => {
     await waitFor(() => frame().includes('+2'), 'preview');
     await press('\r');
     await waitFor(() => frame().includes('Enter summary'), 'diff mode');
-    expect(frame()).toContain('diff --git a/a.txt b/a.txt');
+    expect(frame()).toMatch(/M {2}a\.txt +\+1 -1 · 1\/1/);
+    expect(frame()).not.toContain('diff --git');
     await press('?');
     await waitFor(() => frame().includes('Keyboard shortcuts'), 'help');
     await press('?');
     await waitFor(() => !frame().includes('Keyboard shortcuts'), 'help closed');
+  });
+
+  it('scrolls the diff when it is focused and separates files with banners', async () => {
+    const lines = (suffix = '') =>
+      Array.from({ length: 60 }, (_, i) => `${i + 1}${suffix}`).join('\n') + '\n';
+    repo = createRepo({ 'one.txt': lines(), 'two.txt': lines() });
+    repo.write('one.txt', lines(' changed'));
+    repo.write('two.txt', lines(' changed'));
+    repo.git('stash', 'push', '-q', '-m', 'long');
+    const { frame, press } = renderApp(repo.dir);
+    await waitFor(() => /lines 1–\d+ of 121 ↓/.test(frame()), 'file diff with range');
+
+    // j/k on the stash list must not scroll the diff.
+    await press('j');
+    expect(frame()).toMatch(/lines 1–\d+ of 121 ↓/);
+
+    await press('\t');
+    await press('\t');
+    await waitFor(() => frame().includes('j/k scroll'), 'diff focused');
+    await press('j');
+    await press('\u001B[B'); // the mouse wheel arrives as arrow keys
+    await waitFor(() => /lines 3–\d+ of 121 ↑↓/.test(frame()), 'scrolled two lines');
+
+    await press(' ');
+    await waitFor(() => !/lines 3–/.test(frame()), 'paged');
+
+    // Enter opens the full diff on the current file; ] jumps to the next file's banner.
+    await press('\r');
+    await waitFor(() => frame().includes('Enter summary'), 'full diff');
+    expect(frame()).toMatch(/M {2}one\.txt +\+60 -60 · 1\/2/);
+    await press(']');
+    await waitFor(() => /M {2}two\.txt +\+60 -60 · 2\/2/.test(frame()), 'next file banner');
+    expect(frame()).toMatch(/two\.txt · lines \d+–\d+ of 245/);
+
+    // Returning to the summary keeps the file that was being read.
+    await press('\r');
+    await waitFor(() => frame().includes('› M +60 -60 two.txt'), 'summary on second file');
   });
 });

@@ -1,47 +1,53 @@
 import { Box, Text } from 'ink';
 import type { FileChange, StashEntry, StashStats } from '../../models/stash.js';
 import type { PreviewState } from '../hooks/usePreview.js';
-import type { PreviewMode } from '../../types/ui.js';
+import type { Focus, PreviewMode } from '../../types/ui.js';
+import { fileAtLine, type DiffView, type ViewLine } from '../diffView.js';
 import { relativeTime } from '../../utils/time.js';
 import { pluralize } from '../../utils/text.js';
 import { theme } from '../theme.js';
-import { DiffLines } from './DiffLines.js';
+import { DiffLines, FileBanner, STATUS_LETTER, changeLabel } from './DiffLines.js';
 import { stashTitle, windowStart } from './StashList.js';
 
 interface Props {
   stash: StashEntry;
   preview: PreviewState;
   mode: PreviewMode;
-  focused: boolean;
+  focus: Focus;
   selectedFile: number;
   scroll: number;
   height: number;
+  width: number;
   now: number;
+  /** Full diff with file banners (diff mode). */
+  fullView: DiffView | null;
+  /** Body of the selected file's diff (summary mode). */
+  fileLines: ViewLine[] | null;
 }
 
 const HEADER_HEIGHT = 4;
-
-const STATUS_LETTER: Record<FileChange['status'], string> = {
-  added: 'A',
-  modified: 'M',
-  deleted: 'D',
-  renamed: 'R',
-  copied: 'C',
-  'type-changed': 'T',
-  untracked: 'U',
-  unknown: '?',
-};
 
 /** Rows available to the file list in summary mode. */
 export function fileListHeight(bodyHeight: number, fileCount: number): number {
   return Math.max(1, Math.min(fileCount, Math.max(3, Math.floor(bodyHeight * 0.4))));
 }
 
-/** Rows available to scrollable diff content for a given pane height and mode. */
+/**
+ * Rows available to scrollable diff content. Both modes reserve one row: the selected file's
+ * banner in summary mode, the scroll position indicator in diff mode.
+ */
 export function diffViewportHeight(height: number, mode: PreviewMode, fileCount: number): number {
   const body = Math.max(1, height - HEADER_HEIGHT);
-  if (mode === 'diff') return body;
+  if (mode === 'diff') return Math.max(1, body - 1);
   return Math.max(1, body - fileListHeight(body, fileCount) - 1);
+}
+
+/** Describes the visible window, e.g. `lines 18–34 of 82 ↓`. */
+export function lineRange(offset: number, height: number, total: number): string {
+  if (total <= height) return `${pluralize(total, 'line')}`;
+  const last = Math.min(total, offset + height);
+  const arrows = `${offset > 0 ? '↑' : ''}${last < total ? '↓' : ''}`;
+  return `lines ${offset + 1}–${last} of ${total} ${arrows}`;
 }
 
 function StashHeader({
@@ -86,7 +92,7 @@ function StashHeader({
           <Text color={theme.textMuted}>Loading…</Text>
         )}
       </Text>
-      <Text color={theme.borderSubtle}> </Text>
+      <Text> </Text>
     </Box>
   );
 }
@@ -100,7 +106,7 @@ function FileRow({
   selected: boolean;
   focused: boolean;
 }) {
-  const letter = STATUS_LETTER[file.status];
+  const highlight = selected && focused;
   const letterColor =
     file.status === 'deleted'
       ? theme.diffDel
@@ -110,19 +116,18 @@ function FileRow({
           ? theme.diffAdd
           : theme.actionPrimary;
   return (
-    <Text wrap="truncate-start" inverse={selected && focused} bold={selected}>
-      <Text color={selected && focused ? undefined : letterColor}>{letter}</Text>{' '}
+    <Text wrap="truncate-start" inverse={highlight} bold={selected}>
+      <Text color={highlight ? undefined : theme.focusRing}>{selected ? '›' : ' '}</Text>{' '}
+      <Text color={highlight ? undefined : letterColor}>{STATUS_LETTER[file.status]}</Text>{' '}
       {file.binary ? (
-        <Text color={theme.textMuted}>bin </Text>
+        <Text color={highlight ? undefined : theme.textMuted}>bin </Text>
       ) : (
         <>
-          <Text color={selected && focused ? undefined : theme.diffAdd}>+{file.insertions}</Text>{' '}
-          <Text color={selected && focused ? undefined : theme.diffDel}>
-            -{file.deletions}
-          </Text>{' '}
+          <Text color={highlight ? undefined : theme.diffAdd}>+{file.insertions}</Text>{' '}
+          <Text color={highlight ? undefined : theme.diffDel}>-{file.deletions}</Text>{' '}
         </>
       )}
-      {file.oldPath ? `${file.oldPath} → ${file.path}` : file.path}
+      {changeLabel(file)}
     </Text>
   );
 }
@@ -131,16 +136,20 @@ export function Preview({
   stash,
   preview,
   mode,
-  focused,
+  focus,
   selectedFile,
   scroll,
   height,
+  width,
   now,
+  fullView,
+  fileLines,
 }: Props) {
   const ready = preview.sha === stash.sha;
   const stats = ready ? preview.stats : null;
-  const diff = ready ? preview.diff : null;
   const body = Math.max(1, height - HEADER_HEIGHT);
+  const fileCount = stats?.files.length ?? 0;
+  const viewport = diffViewportHeight(height, mode, fileCount);
 
   let content;
   if (ready && preview.error) {
@@ -149,20 +158,25 @@ export function Preview({
         ✖ {preview.error}
       </Text>
     );
-  } else if (!stats || !diff) {
+  } else if (!stats || !fullView || !fileLines) {
     content = <Text color={theme.textMuted}>Loading preview…</Text>;
   } else if (stats.files.length === 0) {
     content = <Text color={theme.textMuted}>This stash contains no file changes.</Text>;
   } else if (mode === 'diff') {
-    content = <DiffLines lines={diff.lines} offset={scroll} height={body} />;
+    const current = stats.files[fileAtLine(fullView.fileOffsets, scroll)];
+    content = (
+      <>
+        <DiffLines lines={fullView.lines} offset={scroll} height={viewport} width={width} />
+        <Text wrap="truncate-end" color={focus === 'diff' ? theme.focusRing : theme.textMuted}>
+          {current ? `${changeLabel(current)} · ` : ''}
+          {lineRange(scroll, viewport, fullView.lines.length)}
+        </Text>
+      </>
+    );
   } else {
     const listHeight = fileListHeight(body, stats.files.length);
     const start = windowStart(selectedFile, stats.files.length, listHeight);
     const file = stats.files[selectedFile];
-    const fileDiff = file
-      ? diff.files.find((d) => d.path === file.path && d.untracked === file.untracked)
-      : undefined;
-    const diffHeight = diffViewportHeight(height, mode, stats.files.length);
     content = (
       <>
         <Box flexDirection="column" height={listHeight} overflow="hidden">
@@ -171,18 +185,19 @@ export function Preview({
               key={`${f.untracked ? 'u' : 't'}:${f.path}`}
               file={f}
               selected={start + i === selectedFile}
-              focused={focused}
+              focused={focus === 'files'}
             />
           ))}
         </Box>
-        <Text color={theme.borderSubtle} wrap="truncate-end">
-          {'─'.repeat(200)}
-        </Text>
-        {fileDiff ? (
-          <DiffLines lines={fileDiff.lines} offset={scroll} height={diffHeight} />
-        ) : (
-          <Text color={theme.textMuted}>No textual diff for this file.</Text>
-        )}
+        {file ? (
+          <FileBanner
+            change={file}
+            width={width}
+            active={focus === 'diff'}
+            info={lineRange(scroll, viewport, fileLines.length)}
+          />
+        ) : null}
+        <DiffLines lines={fileLines} offset={scroll} height={viewport} width={width} />
       </>
     );
   }

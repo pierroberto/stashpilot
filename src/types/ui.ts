@@ -1,6 +1,7 @@
 import type { ApplyAssessment, MutatingAction, StashEntry } from '../models/stash.js';
 
-export type Focus = 'list' | 'preview';
+/** Focus zones from left to right. `files` exists only in summary mode. */
+export type Focus = 'list' | 'files' | 'diff';
 
 export type PreviewMode = 'summary' | 'diff';
 

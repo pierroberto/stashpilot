@@ -17,10 +17,17 @@ export function statusHeight(status: StatusMessage): number {
   return Math.min(3, status.text.split('\n').length);
 }
 
-function hints(focus: Focus, mode: PreviewMode): string {
-  const nav =
-    focus === 'list' ? 'j/k stash' : mode === 'diff' ? 'j/k scroll' : 'j/k file · PgDn scroll';
-  return `${nav} · Tab focus · Enter ${mode === 'summary' ? 'diff' : 'summary'} · / filter · a apply · p pop · d drop · b branch · r refresh · ? help · q quit`;
+/** Short, focus-specific key hints; the most relevant keys come first so truncation is harmless. */
+export function hints(focus: Focus, mode: PreviewMode): string {
+  const toggle = mode === 'summary' ? 'Enter full diff' : 'Enter summary';
+  switch (focus) {
+    case 'list':
+      return `j/k stash · Tab files · Space scroll diff · ${toggle} · / filter · a/p/d/b actions · ? help · q quit`;
+    case 'files':
+      return `j/k file · Tab diff · Space scroll diff · ${toggle} · h back · ? help`;
+    case 'diff':
+      return `j/k scroll · Space/PgDn page · [ ] file · g/G top/end · ${toggle} · Tab list · ? help`;
+  }
 }
 
 export function Footer({ overlay, filter, status, focus, mode, statusLines }: Props) {

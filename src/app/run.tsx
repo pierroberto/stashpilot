@@ -2,8 +2,11 @@ import { render } from 'ink';
 import { GitClient } from '../git/client.js';
 import { App } from './App.js';
 
-const ENTER_ALT_SCREEN = '\x1b[?1049h\x1b[H';
-const LEAVE_ALT_SCREEN = '\x1b[?1049l';
+// Alternate screen, plus "alternate scroll" mode (1007): terminals translate the mouse wheel
+// into arrow keys, so it scrolls the focused pane without capturing the mouse (text selection
+// keeps working).
+const ENTER_ALT_SCREEN = '\x1b[?1049h\x1b[?1007h\x1b[H';
+const LEAVE_ALT_SCREEN = '\x1b[?1007l\x1b[?1049l';
 
 /** Renders the full-screen TUI and resolves when the user quits. */
 export async function runTui(repoRoot: string): Promise<void> {

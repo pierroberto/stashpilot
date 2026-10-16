@@ -6,7 +6,7 @@ leaving the terminal.
 [![npm version](https://img.shields.io/npm/v/stashpilot.svg)](https://www.npmjs.com/package/stashpilot)
 [![CI](https://github.com/pierroberto/stashpilot/actions/workflows/ci.yml/badge.svg)](https://github.com/pierroberto/stashpilot/actions/workflows/ci.yml)
 [![node](https://img.shields.io/node/v/stashpilot.svg)](https://nodejs.org)
-[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/pierroberto/stashpilot/blob/main/LICENSE)
 
 ```bash
 npx stashpilot
@@ -14,7 +14,7 @@ npx stashpilot
 
 No config and no setup. Run it in any Git repository.
 
-![Stashpilot demo](docs/demo.gif)
+![Stashpilot demo](https://raw.githubusercontent.com/pierroberto/stashpilot/main/docs/demo.gif)
 
 ---
 
@@ -304,7 +304,7 @@ job: stashes.
 
 ## Contributing
 
-Bug reports and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for
+Bug reports and pull requests are welcome. See [CONTRIBUTING.md](https://github.com/pierroberto/stashpilot/blob/main/CONTRIBUTING.md) for
 development setup, checks, and the Changesets release process.
 
 If Stashpilot saved you from re-running `git stash show -p` a dozen times, a ⭐ on
@@ -312,4 +312,4 @@ If Stashpilot saved you from re-running `git stash show -p` a dozen times, a ⭐
 
 ## License
 
-[MIT](LICENSE) © Pier Roberto Lucisano
+[MIT](https://github.com/pierroberto/stashpilot/blob/main/LICENSE) © Pier Roberto Lucisano

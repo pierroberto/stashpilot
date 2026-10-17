@@ -1,5 +1,11 @@
 # stashpilot
 
+## 0.2.1
+
+### Patch Changes
+
+- 0a5da13: Refresh the README with a quickstart, a before/after comparison with `git stash list`, and an animated demo.
+
 ## 0.2.0
 
 ### Minor Changes

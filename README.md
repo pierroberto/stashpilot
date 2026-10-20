@@ -16,7 +16,6 @@ No config and no setup. Run it in any Git repository.
 
 ![Stashpilot demo](https://raw.githubusercontent.com/pierroberto/stashpilot/main/docs/demo.gif)
 
-
 ## Why Stashpilot
 
 - **See inside before you apply.** Every stash shows its changed files and diff. Browsing is

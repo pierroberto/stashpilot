@@ -1,5 +1,11 @@
 # stashpilot
 
+## 0.2.2
+
+### Patch Changes
+
+- 25eb9c2: Fix Github release action
+
 ## 0.2.1
 
 ### Patch Changes

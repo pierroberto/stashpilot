@@ -16,50 +16,6 @@ No config and no setup. Run it in any Git repository.
 
 ![Stashpilot demo](https://raw.githubusercontent.com/pierroberto/stashpilot/main/docs/demo.gif)
 
----
-
-## `git stash list` tells you almost nothing
-
-You stashed something three days ago. Which one was it?
-
-```console
-$ git stash list
-stash@{0}: On fix/login-redirect: debug logging for redirect loop
-stash@{1}: WIP on main: b7193f9 init
-stash@{2}: On feature/oauth: oauth: half-done token refresh
-stash@{3}: On spike/graphql: graphql experiment, revisit after v2
-```
-
-There are no file names, no sizes, and no ages. Nothing tells you that `spike/graphql` was
-deleted weeks ago or that `stash@{2}` contains untracked files. To find out, you end up
-running `git stash show -p stash@{n}` over and over.
-
-**Here's the same repository in `spilot`:**
-
-```text
-Stashpilot · demo-repo · 4 stashes
-╭──────────────────────────────────────╮╭──────────────────────────────────────────────────────────╮
-│   stash@{0} debug logging for redir… ││ stash@{2} oauth: half-done token refresh                 │
-│   fix/login-redirect · 40m · 2f +4 … ││ feature/oauth · 3 days ago (10/13/2026, 6:17:06 PM) · b… │
-│   stash@{1} WIP: init                ││ 3 files +3 -2 · 1 untracked                              │
-│   main · 5h · 1f +1 -1               ││                                                          │
-│ › stash@{2} oauth: half-done token … ││ › M +1 -1 src/auth/login.ts                              │
-│   feature/oauth · 3d · 3f +3 -2 U    ││   M +1 -1 src/auth/session.ts                            │
-│   stash@{3} graphql experiment, rev… ││   U +1 -0 src/auth/oauth.ts                              │
-│   spike/graphql (deleted) · 3w · 2f… ││  M  src/auth/login.ts                   +1 -1 · 5 lines  │
-│                                      ││ @@ -1,3 +1,3 @@                                          │
-│                                      ││  export function login(user) {                           │
-│                                      ││ -  return api.post("/login", user);                      │
-│                                      ││ +  return oauth.authorize({ provider: "github", user }); │
-│                                      ││  }                                                       │
-╰──────────────────────────────────────╯╰──────────────────────────────────────────────────────────╯
-
-j/k stash · Tab files · Space scroll diff · Enter full diff · / filter · a/p/d/b actions · ? help ·…
-```
-
-For every stash you get the source branch (flagged if it was deleted), its age, file count,
-line stats, and untracked files. The diff sits right next to the list. The terminal shows
-all of this in color.
 
 ## Why Stashpilot
 

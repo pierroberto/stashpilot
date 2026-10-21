@@ -1,5 +1,11 @@
 # stashpilot
 
+## 0.2.3
+
+### Patch Changes
+
+- 6d21b88: Fix release automation so tags, GitHub Releases and binaries are created after publishing
+
 ## 0.2.2
 
 ### Patch Changes

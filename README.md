@@ -1,5 +1,9 @@
 # Stashpilot
 
+<p align="center">
+  <img src="assets/logo.png" alt="Stashpilot logo" width="200">
+</p>
+
 **The missing interface for Git stashes.** Preview, search, and clean up your stashes without
 leaving the terminal.
 
